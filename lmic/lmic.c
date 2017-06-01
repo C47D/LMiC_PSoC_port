@@ -128,13 +128,9 @@ u1_t os_getBattLevel (void) {
 u2_t os_crc16 (xref2u1_t data, uint len) {
     u2_t remainder = 0;
     u2_t polynomial = 0x1021;
-    
-    uint i;
-    u1_t bit;
-    
-    for( i = 0; i < len; i++ ) {
+    for( uint i = 0; i < len; i++ ) {
         remainder ^= data[i] << 8;
-        for( bit = 8; bit > 0; bit--) {
+        for( u1_t bit = 8; bit > 0; bit--) {
             if( (remainder & 0x8000) )
                 remainder = (remainder << 1) ^ polynomial;
             else 
@@ -1400,8 +1396,7 @@ static bit_t processJoinAccept (void) {
         goto badframe;
 #endif
         dlen = OFF_CFLIST;
-        u1_t chidx;
-        for( chidx = 3; chidx<8; chidx++, dlen+=3 ) {
+        for( u1_t chidx = 3; chidx<8; chidx++, dlen+=3 ) {
             u4_t freq = convFreq(&LMIC.frame[dlen]);
             if( freq )
                 LMIC_setupChannel(chidx, freq, 0, -1);

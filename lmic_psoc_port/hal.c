@@ -12,7 +12,7 @@ void hal_init( void )
 {
     //hal_time_init();
     SPI_Start();
-    UART_Start();
+    Timer_Start();
     
     // Most of the HAL configuration is done on the schematic
     // so not so much to be done here.

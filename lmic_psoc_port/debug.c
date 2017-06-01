@@ -45,6 +45,7 @@
 void debug_init () {
 
     LED_Write( LED_OFF );
+    UART_Start();
 
 #if 0
     // configure LED pin as output
