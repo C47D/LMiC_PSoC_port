@@ -46,7 +46,7 @@ typedef unsigned long long u8_t;
 typedef          long long s8_t;
 typedef unsigned int       uint;
 typedef const char* str_t;
-
+    
 #include <string.h>
 #include "hal.h"
 

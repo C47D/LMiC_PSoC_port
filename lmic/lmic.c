@@ -1431,6 +1431,12 @@ static bit_t processJoinAccept (void) {
         LMIC.datarate = lowerDR(LMIC.datarate, LMIC.rejoinCnt);
     }
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
+    stateJustJoined();
+    reportEvent(EV_JOINED);
+    return 1;
+#if 0
+    // Removed by C47D based on
+    // https://github.com/wklenk/lmic-rpi-lora-gps-hat/blob/master/lmic/lmic.c
     LMIC.txCnt = 0;
     stateJustJoined();
     LMIC.dn2Dr = LMIC.frame[OFF_JA_DLSET] & 0x0F;
@@ -1438,6 +1444,7 @@ static bit_t processJoinAccept (void) {
     if (LMIC.rxDelay == 0) LMIC.rxDelay = 1;   
     reportEvent(EV_JOINED);
     return 1;
+#endif
 }
 
 
@@ -1500,7 +1507,11 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 static void processRx1DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
+        schedRx2( DELAY_DNW2_osticks, FUNC_ADDR( setupRx2DnData ) );
+#if 0
+    if( LMIC.dataLen == 0 || !processDnData() )
         schedRx2(sec2osticks(LMIC.rxDelay + (int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData));
+#endif
 }
 
 
@@ -1510,7 +1521,10 @@ static void setupRx1DnData (xref2osjob_t osjob) {
 
 
 static void updataDone (xref2osjob_t osjob) {
+    txDone( DELAY_DNW1_osticks, FUNC_ADDR( setupRx1DnData ) );
+#if 0
     txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
+#endif
 }
 
 // ======================================== 
@@ -2113,7 +2127,9 @@ void LMIC_reset (void) {
     LMIC.adrEnabled   =  FCT_ADREN;
     LMIC.dn2Dr        =  DR_DNW2;   // we need this for 2nd DN window of join accept
     LMIC.dn2Freq      =  FREQ_DNW2; // ditto
+#if 0
     LMIC.rxDelay      =  DELAY_DNW1;
+#endif
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
     LMIC.ping.intvExp =  0xFF;

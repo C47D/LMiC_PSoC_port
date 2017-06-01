@@ -26,6 +26,7 @@
  */
 
 #include "lmic.h"
+#include "oslmic.h"
 
 // RUNTIME STATE
 static struct {

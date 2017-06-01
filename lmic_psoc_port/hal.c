@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2014-2016 IBM Corporation.
  * All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -25,62 +24,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+** HAL targeted to PSoC5LP and SX1272 IC
+*/
+
 #include "project.h"
 
-#include "lmic.h"
 #include "hal.h"
-
-// -----------------------------------------------------------------------------
-// I/O
-
-#ifdef CFG_sx1276mb1_board
-
-#define NSS_PORT           1 // NSS: PB6, sx1276
-#define NSS_PIN            6  // sx1276: PB6
-
-#define TX_PORT            2 // TX:  PC1
-#define TX_PIN             1
-
-#define RST_PORT           0 // RST: PA0
-#define RST_PIN            0
-
-#define DIO0_PORT          0 // DIO0: PA10, sx1276   (line 1 irq handler)
-#define DIO0_PIN           10
-#define DIO1_PORT          1 // DIO1: PB3, sx1276  (line 10-15 irq handler)
-#define DIO1_PIN           3
-#define DIO2_PORT          1 // DIO2: PB5, sx1276  (line 10-15 irq handler)
-#define DIO2_PIN           5
-
-static const u1_t outputpins[] = { NSS_PORT, NSS_PIN, TX_PORT, TX_PIN  };
-static const u1_t inputpins[]  = { DIO0_PORT, DIO0_PIN, DIO1_PORT, DIO1_PIN, DIO2_PORT, DIO2_PIN };
-
-#elif CFG_wimod_board
-
-// output lines
-#define NSS_PORT           1 // NSS: PB0, sx1272
-#define NSS_PIN            0
-
-#define TX_PORT            0 // TX:  PA4
-#define TX_PIN             4
-#define RX_PORT            2 // RX:  PC13
-#define RX_PIN            13
-#define RST_PORT           0 // RST: PA2
-#define RST_PIN            2
-
-// input lines
-#define DIO0_PORT          1 // DIO0: PB1   (line 1 irq handler)
-#define DIO0_PIN           1
-#define DIO1_PORT          1 // DIO1: PB10  (line 10-15 irq handler)
-#define DIO1_PIN          10
-#define DIO2_PORT          1 // DIO2: PB11  (line 10-15 irq handler)
-#define DIO2_PIN          11
-
-static const u1_t outputpins[] = { NSS_PORT, NSS_PIN, TX_PORT, TX_PIN, RX_PORT, RX_PIN };
-static const u1_t inputpins[]  = { DIO0_PORT, DIO0_PIN, DIO1_PORT, DIO1_PIN, DIO2_PORT, DIO2_PIN };
-
-#else
-#error Missing CFG_sx1276mb1_board/CFG_wimod_board!
-#endif
+#include "lmic.h"
+#include "debug.h"
 
 // HAL state
 static struct {
@@ -91,30 +43,45 @@ static struct {
 // -----------------------------------------------------------------------------
 // I/O
 
-static void hal_io_init ()
+void hal_init( void )
 {
+    //hal_time_init();
+    
+    // Most of the HAL configuration is done on the schematic
+    // so not so much to be done here.
+    
+    // Make sure that SPI communication with the radio module works
+    // by reading the "version" register 0x42 of the radio module.
+    hal_pin_nss(0);
+    u1_t val = hal_spi(0x42 & 0x7F);
+    hal_pin_nss(1);
+    
+    if( 0 == val )
+    {
+        debug_str("HAL: There is an issue with the SPI communication to the radio module.\r\n");
+        hal_failed();
+    }
+    else if( 0x12 == val)
+    {
+        debug_str("HAL: Detected the SX1276 radio module.\r\n");
+    }
+    
+}
 
+// set radio NSS pin to given value
+void hal_pin_nss(u1_t val)
+{
+    SS_Write( (uint8_t)val );
 #if 0
-    // clock enable for GPIO ports A,B,C
-    RCC->AHBENR  |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
-
-    // configure output lines and set to low state
-    for(u1_t i=0; i<sizeof(outputpins); i+=2) {
-        hw_cfg_pin(GPIOx(outputpins[i]), outputpins[i+1], GPIOCFG_MODE_OUT | GPIOCFG_OSPEED_40MHz | GPIOCFG_OTYPE_PUPD | GPIOCFG_PUPD_PUP);
-        hw_set_pin(GPIOx(outputpins[i]), outputpins[i+1], 0);
-    }
-
-    // configure input lines and register IRQ
-    for(u1_t i=0; i<sizeof(inputpins); i+=2) {
-        hw_cfg_pin(GPIOx(inputpins[i]), inputpins[i+1], GPIOCFG_MODE_INP | GPIOCFG_OSPEED_40MHz | GPIOCFG_OTYPE_OPEN);
-        hw_cfg_extirq(inputpins[i], inputpins[i+1], GPIO_IRQ_RISING);
-    }
+    hw_set_pin(GPIOx(NSS_PORT), NSS_PIN, val);
 #endif
 }
 
 // val ==1  => tx 1, rx 0 ; val == 0 => tx 0, rx 1
 void hal_pin_rxtx(u1_t val)
 {
+    ASSERT(val == 1 || val == 0);
+    
     if( 1 == val )
     {
         RX_Write( 0 );
@@ -132,15 +99,6 @@ void hal_pin_rxtx(u1_t val)
 #endif
 }
 
-// set radio NSS pin to given value
-void hal_pin_nss(u1_t val)
-{
-    SS_Write( (uint8_t)val );
-#if 0
-    hw_set_pin(GPIOx(NSS_PORT), NSS_PIN, val);
-#endif
-}
-
 // set radio RST pin to given value (or keep floating!)
 void hal_pin_rst(u1_t val)
 {
@@ -155,6 +113,57 @@ void hal_pin_rst(u1_t val)
 #endif
 }
 
+// perform SPI transaction with radio
+u1_t hal_spi(u1_t outval) {
+    SPI_WriteTxData( outval );
+    while( 0 == ( SPI_ReadRxStatus() & SPI_STS_SPI_DONE ) );
+    return SPI_ReadRxData();
+    
+#if 0
+    SPI2->DR = out;
+    while( (SPI2->SR & SPI_SR_RXNE ) == 0);
+    return SPI2->DR; // in
+#endif
+}
+
+void hal_disableIRQs( void )
+{
+    
+}
+
+void hal_enable_IRQs( void )
+{
+    
+}
+
+void hal_sleep( void )
+{
+    
+}
+
+u4_t hal_ticks( void )
+{
+    return 0;
+}
+
+void hal_waitUntil(u4_t time)
+{
+    (void)time;
+}
+
+u1_t hal_checkTimer(u4_t targettime)
+{
+    (void)targettime;
+    return 0;
+}
+
+void hal_failed( void )
+{
+    debug_str("HAL failed, aborting...\r\n");
+    
+    while(1);
+}
+
 extern void radio_irq_handler(u1_t dio);
 
 // generic EXTI IRQ handler for all channels
@@ -165,6 +174,7 @@ CY_ISR( DIO_Handler )
     
 }
 
+#if 0
 void EXTI_IRQHandler () {
     // DIO 0
     if((EXTI->PR & (1<<DIO0_PIN)) != 0) { // pending
@@ -193,6 +203,7 @@ void EXTI_IRQHandler () {
     }
 #endif // CFG_EXTI_IRQ_HANDLER
 }
+#endif
 
 #if CFG_lmic_clib
 void EXTI0_IRQHandler () {
@@ -258,19 +269,6 @@ static void hal_spi_init(void)
     // configure and activate the SPI (master, internal slave select, software slave mgmt)
     // (use default mode: 8-bit, 2-wire, no crc, MSBF, PCLK/2, CPOL0, CPHA0)
     SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE;
-#endif
-}
-
-// perform SPI transaction with radio
-u1_t hal_spi(u1_t outval) {
-    SPI_WriteTxData( outval );
-    while( 0 == ( SPI_ReadRxStatus() & SPI_STS_SPI_DONE ) );
-    return SPI_ReadRxData();
-    
-#if 0
-    SPI2->DR = out;
-    while( (SPI2->SR & SPI_SR_RXNE ) == 0);
-    return SPI2->DR; // in
 #endif
 }
 

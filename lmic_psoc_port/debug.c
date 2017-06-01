@@ -27,8 +27,8 @@
 
 #include "project.h"
 
-#include "hw.h"
 #include "debug.h"
+
 #include "lmic.h"
 
 #define LED_OFF 0
