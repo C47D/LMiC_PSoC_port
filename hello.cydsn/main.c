@@ -33,8 +33,7 @@ static void initfunc(osjob_t* job);
 
 int main(void)
 {
-    CyGlobalIntEnable;
-    
+   
     osjob_t initjob;
     
     // initialize run-time env

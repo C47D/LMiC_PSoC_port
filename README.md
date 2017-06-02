@@ -25,7 +25,7 @@ compilación de este proyecto.
     defines del preprocesador:
         En Compiler -> General -> Preprocessor Definitions se añadió:
             - CFG_DEBUG
-            - CFG_eu868
+            - CFG_us915
             - CFG_sx1272_radio
             - CFG_DEBUG_LMIC
             - CFG_DEBUG_HAL

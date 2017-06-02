@@ -8,14 +8,83 @@
 #include "lmic.h"
 #include "debug.h"
 
+static struct {
+    int irq_level;
+    u4_t ticks;
+} HAL;
+
+CY_ISR( DIO_Handler )
+{
+    // interrupt triggered on the rising edge of
+    // DIO0, DIO1, DIO2 input lines, and the corresponding
+    // interrupt handlers must invoke the function
+    // radio_irq_handler() passing the line whichh generated
+    // the interrupt as argument ( 0, 1, 2)
+    
+    // TODO: Fix it!!!
+    volatile uint8_t mask;
+    
+    mask = DIO_ClearInterrupt();
+    
+    switch(mask)
+    {
+    case 0x01: // DIO0
+        radio_irq_handler( 0 );
+        break;
+    case 0x02: // DIO1
+        radio_irq_handler( 1 );
+        break;
+    case 0x04: // DIO2
+        radio_irq_handler( 2 );
+        break;
+    }
+
+}
+
+CY_ISR( Timer_Handler )
+{    
+    // Update the system clock tick on roll-over of the counter
+    // It is sufficient that the CPU waked from sleep and the tun-time
+    // environment of LMiC can check for pending actions.
+#if 0
+    if(TIM9->SR & TIM_SR_UIF) { // overflow
+        HAL.ticks++;
+    }
+    if((TIM9->SR & TIM_SR_CC2IF) && (TIM9->DIER & TIM_DIER_CC2IE)) { // expired
+        // do nothing, only wake up cpu
+    }
+    TIM9->SR = 0; // clear IRQ flags
+#endif
+
+// overflow
+    HAL.ticks++;
+    
+
+    // Read the Timer STATUS reg to clear the interrupt
+     (void)Timer_ReadStatusRegister();
+}
+
 void hal_init( void )
 {
     //hal_time_init();
-    SPI_Start();
-    Timer_Start();
     
     // Most of the HAL configuration is done on the schematic
     // so not so much to be done here.
+    
+    memset( &HAL, 0x00, sizeof( HAL ) );
+    hal_disableIRQs();
+    
+    // Configure radio I/O and interrupt handler
+    isr_DIO_StartEx( DIO_Handler );
+    
+    // Configure radio SPI
+    SPI_Start();
+    
+    // Configure timer and interrupt handler
+    //Timer_Start();
+    // isr_Timer_StartEx( Timer_Handler );
+    
+    hal_enableIRQs();
     
     // Make sure that SPI communication with the radio module works
     // by reading the "version" register 0x42 of the radio module.
@@ -95,21 +164,47 @@ u1_t hal_spi(u1_t outval) {
 
 void hal_disableIRQs( void )
 {
-    
+    // TODO: Check if it's the right way to do it
+    CyGlobalIntDisable;    
 }
 
 void hal_enableIRQs( void )
 {
-    
+    // TODO: Check if it's the right way to do it
+    CyGlobalIntEnable;
 }
 
 void hal_sleep( void )
 {
     // __WFI();
+    // Sleep until interrupt occurs, Preferably system components
+    // can be put in low-power mode before sleep, and be re-initialized
+    // after sleep.
 }
 
 u4_t hal_ticks( void )
 {
+#if 0
+    u4_t hal_ticks () {
+        hal_disableIRQs();
+        u4_t t = HAL.ticks;
+        u2_t cnt = TIM9->CNT;
+        if( (TIM9->SR & TIM_SR_UIF) ) {
+            // Overflow before we read CNT?
+            // Include overflow in evaluation but
+            // leave update of state to ISR once interrupts enabled again
+            cnt = TIM9->CNT;
+            t++;
+        }
+        hal_enableIRQs();
+        return (t<<16)|cnt;
+    }
+#endif
+    hal_disableIRQs();
+
+    u4_t t = HAL.ticks;
+    
+    hal_enableIRQs();
     return 0;
 }
 
@@ -120,26 +215,42 @@ void hal_waitUntil(u4_t time)
 
 u1_t hal_checkTimer(u4_t targettime)
 {
+#if 0
+    u2_t dt;
+    TIM9->SR &= ~TIM_SR_CC2IF; // clear any pending interrupts
+    if((dt = deltaticks(time)) < 5) { // event is now (a few ticks ahead)
+        TIM9->DIER &= ~TIM_DIER_CC2IE; // disable IE
+        return 1;
+    } else { // rewind timer (fully or to exact time))
+        TIM9->CCR2 = TIM9->CNT + dt;   // set comparator
+        TIM9->DIER |= TIM_DIER_CC2IE;  // enable IE
+        TIM9->CCER |= TIM_CCER_CC2E;   // enable capture/compare uint 2
+        return 0;
+    }
+#endif
+    u2_t dt;
+// clear any pending interrupts
+
+    if( dt )
+    {
+        return 1;
+    }
+    else // Rewind timer
+    {
+        return 0;
+    }
+
     (void)targettime;
-    return 0;
 }
 
 void hal_failed( void )
 {
-    debug_str("HAL failed, aborting...\r\n");
-    
+    debug_str("HAL failed, halting...\r\n");
+    hal_disableIRQs();
     while(1);
 }
 
 extern void radio_irq_handler(u1_t dio);
-
-// generic EXTI IRQ handler for all channels
-// TODO: Replace it for PSoC version
-
-CY_ISR( DIO_Handler )
-{
-    
-}
 
 #if 0
 void EXTI_IRQHandler () {

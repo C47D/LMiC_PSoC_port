@@ -44,7 +44,7 @@
     
 void debug_init () {
 
-    LED_Write( LED_OFF );
+    LED_Write( LED_ON );
     UART_Start();
 
 #if 0
