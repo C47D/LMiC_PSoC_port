@@ -20,6 +20,7 @@ Los cambios necesarios para el funcionamiento de esta librería en nuevas plataf
 * En el fichero lmic.c se hacia referencia a la propiedad rxDelay
 que no esta mas en los archivos fuente, se busco el fichero
 lmic.c en otros proyectos y se actualizo el de este proyecto.
+* En radio.c y lmic.c habia #elif en vez de #elif defined, por esto no se configuraba el API cuando se tenia CFG_sx1272_radio.
 
 
 ### Ajustes en los Build settings del proyecto:
@@ -34,7 +35,7 @@ En Compiler -> General -> Preprocessor Definitions se añadió:
 
 
 Basados en otros proyectos encontrados en GitHub (concretamente en:
-github.com/wklenk/lmic_rpi_lora_gps_hat) se añadieron flags a la
+github.com/wklenk/lmic-rpi-lora-gps-hat) se añadieron flags a la
 compilación de este proyecto.
 - CFG_DEBUG_LMIC
 - CFG_DEBUG_HAL

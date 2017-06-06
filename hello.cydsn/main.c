@@ -36,11 +36,11 @@ int main(void)
    
     osjob_t initjob;
     
-    // initialize run-time env
-    os_init();
-    
     // initialize debug library
     debug_init();
+    
+    // initialize run-time env
+    os_init();
     
     // setup initial job
     os_setCallback(&initjob, initfunc);
@@ -57,9 +57,9 @@ static void initfunc(osjob_t* job)
     // say hello
     debug_str("Hello World\r\n");
     // log counter
-    debug_val("cnt = ", cnt);
+    debug_val("cnt = ", cnt++);
     // toggle LED
-    debug_led(++cnt & 1);
+    debug_led( ~LED_Read() );
     // reschedule job every second
     os_setTimedCallback(job, os_getTime() + sec2osticks( 1 ), initfunc );
 }

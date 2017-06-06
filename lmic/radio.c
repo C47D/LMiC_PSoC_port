@@ -27,6 +27,10 @@
 
 #include "lmic.h"
 
+// Changes by C47D
+// change from #elif CFG_sx1272_radio to #elif defined(CFG_sx1272_radio)
+// cause: #error was triggered when configured with CFG_sx1272_radio 
+
 // ---------------------------------------- 
 // Registers Mapping
 #define RegFifo                                    0x00 // common
@@ -189,7 +193,7 @@
 #define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1 0x0A
 #ifdef CFG_sx1276_radio
 #define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x70
-#elif CFG_sx1272_radio
+#elif defined(CFG_sx1272_radio)
 #define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x74
 #endif
 
@@ -269,7 +273,7 @@ static u1_t randbuf[16];
 
 #ifdef CFG_sx1276_radio
 #define LNA_RX_GAIN (0x20|0x1)
-#elif CFG_sx1272_radio
+#elif defined(CFG_sx1272_radio)
 #define LNA_RX_GAIN (0x20|0x03)
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
@@ -370,7 +374,7 @@ static void configLoraModem () {
             mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
         }
         writeReg(LORARegModemConfig3, mc3);
-#elif CFG_sx1272_radio
+#elif defined(CFG_sx1272_radio)
         u1_t mc1 = (getBw(LMIC.rps)<<6);
 
         switch( getCr(LMIC.rps) ) {
@@ -432,7 +436,7 @@ static void configPower () {
     writeReg(RegPaConfig, (u1_t)(0x80|(pw&0xf)));
     writeReg(RegPaDac, readReg(RegPaDac)|0x4);
 
-#elif CFG_sx1272_radio
+#elif defined(CFG_sx1272_radio)
     // set PA config (2-17 dBm using PA_BOOST)
     s1_t pw = (s1_t)LMIC.txpow;
     if(pw > 17) {
@@ -684,9 +688,9 @@ void radio_init () {
     // some sanity checks, e.g., read version number
     u1_t v = readReg(RegVersion);
 #ifdef CFG_sx1276_radio
-    ASSERT(v == 0x12 ); 
-#elif CFG_sx1272_radio
-    ASSERT(v == 0x22);
+    ASSERT( v == 0x12 ); 
+#elif defined(CFG_sx1272_radio)
+    ASSERT( v == 0x22 );
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif

@@ -24,12 +24,15 @@ CY_ISR( DIO_Handler )
     switch( DIO_ClearInterrupt() )
     {
     case 0x01: // DIO0
+        UART_PutHexByte(1);
         radio_irq_handler( 0 );
         break;
     case 0x02: // DIO1
+        UART_PutHexByte(2);
         radio_irq_handler( 1 );
         break;
     case 0x04: // DIO2
+        UART_PutHexByte(4);
         radio_irq_handler( 2 );
         break;
     }
@@ -62,21 +65,21 @@ void hal_init( void )
 {
     //hal_time_init();
     
-    // Most of the HAL configuration is done on the schematic
-    // so not so much to be done here.
+    // GPIO configuration is done on the schematic
     
     memset( &HAL, 0x00, sizeof( HAL ) );
+    
     hal_disableIRQs();
     
     // Configure radio I/O and interrupt handler
-    isr_DIO_StartEx( DIO_Handler );
+    // isr_DIO_StartEx( DIO_Handler );
     
     // Configure radio SPI
     SPI_Start();
     
     // Configure timer and interrupt handler
-    //Timer_Start();
-    // isr_Timer_StartEx( Timer_Handler );
+    Timer_Start();
+    isr_Timer_StartEx( Timer_Handler );
     
     hal_enableIRQs();
     
@@ -93,7 +96,7 @@ void hal_init( void )
     }
     else if( 0x12 == val)
     {
-        debug_str("HAL: Detected the SX1276 radio module.\r\n");
+        debug_str("HAL: Detected the SX1272 radio module.\r\n");
     }
     
 }
@@ -101,17 +104,12 @@ void hal_init( void )
 // set radio NSS pin to given value
 void hal_pin_nss(u1_t val)
 {
-    SS_Write( (uint8_t)val );
-#if 0
-    hw_set_pin(GPIOx(NSS_PORT), NSS_PIN, val);
-#endif
+    SS_Write( val );
 }
 
 // val ==1  => tx 1, rx 0 ; val == 0 => tx 0, rx 1
 void hal_pin_rxtx(u1_t val)
-{
-    ASSERT(val == 1 || val == 0);
-    
+{    
     if( 1 == val )
     {
         RX_Write( 0 );
@@ -120,27 +118,13 @@ void hal_pin_rxtx(u1_t val)
         RX_Write( 1 );
         TX_Write( 0 );
     }
-#if 0
-    ASSERT(val == 1 || val == 0);
-#ifndef CFG_sx1276mb1_board
-    hw_set_pin(GPIOx(RX_PORT), RX_PIN, ~val);
-#endif
-    hw_set_pin(GPIOx(TX_PORT), TX_PIN, val);
-#endif
 }
 
-// set radio RST pin to given value (or keep floating!)
+// set radio RST pin to given value
+// TODO: if val is 2, configure pin as floating
 void hal_pin_rst(u1_t val)
 {
-    RST_Write( (uint8_t)val );
-#if 0
-    if(val == 0 || val == 1) { // drive pin
-        hw_cfg_pin(GPIOx(RST_PORT), RST_PIN, GPIOCFG_MODE_OUT | GPIOCFG_OSPEED_40MHz | GPIOCFG_OTYPE_PUPD | GPIOCFG_PUPD_PUP);
-        hw_set_pin(GPIOx(RST_PORT), RST_PIN, val);
-    } else { // keep pin floating
-        hw_cfg_pin(GPIOx(RST_PORT), RST_PIN, GPIOCFG_MODE_INP | GPIOCFG_OSPEED_40MHz | GPIOCFG_OTYPE_OPEN);
-    }
-#endif
+    RST_Write( val );
 }
 
 // perform SPI transaction with radio
@@ -148,12 +132,6 @@ u1_t hal_spi(u1_t outval) {
     SPI_WriteTxData( outval );
     while( 0 == ( SPI_ReadRxStatus() & SPI_STS_SPI_DONE ) );
     return SPI_ReadRxData();
-    
-#if 0
-    SPI2->DR = out;
-    while( (SPI2->SR & SPI_SR_RXNE ) == 0);
-    return SPI2->DR; // in
-#endif
 }
 
 void hal_disableIRQs( void )
@@ -173,7 +151,7 @@ void hal_sleep( void )
     // Sleep until interrupt occurs, Preferably system components
     // can be put in low-power mode before sleep, and be re-initialized
     // after sleep.
-    // __WFI();
+    asm volatile("WFI");
 }
 
 u4_t hal_ticks( void )
