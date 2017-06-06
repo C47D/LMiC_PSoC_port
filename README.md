@@ -1,6 +1,6 @@
 ## Librería LMiC para PSoC5LP
 
-Colaboración entre [jnavarro7](github.com/jnavarro7) y [C47D](github.com/C47D).
+Colaboración entre [jnavarro7](https://github.com/jnavarro7) y [C47D](https://github.com/C47D).
 
 ### Herramientas utilizadas
 - PSoC Creator 4.0
