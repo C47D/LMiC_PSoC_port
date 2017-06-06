@@ -21,12 +21,7 @@ CY_ISR( DIO_Handler )
     // radio_irq_handler() passing the line whichh generated
     // the interrupt as argument ( 0, 1, 2)
     
-    // TODO: Fix it!!!
-    volatile uint8_t mask;
-    
-    mask = DIO_ClearInterrupt();
-    
-    switch(mask)
+    switch( DIO_ClearInterrupt() )
     {
     case 0x01: // DIO0
         radio_irq_handler( 0 );
@@ -56,10 +51,9 @@ CY_ISR( Timer_Handler )
     TIM9->SR = 0; // clear IRQ flags
 #endif
 
-// overflow
+    // overflow
     HAL.ticks++;
     
-
     // Read the Timer STATUS reg to clear the interrupt
      (void)Timer_ReadStatusRegister();
 }
@@ -164,22 +158,22 @@ u1_t hal_spi(u1_t outval) {
 
 void hal_disableIRQs( void )
 {
-    // TODO: Check if it's the right way to do it
+    // See cy_boot page 53
     CyGlobalIntDisable;    
 }
 
 void hal_enableIRQs( void )
 {
-    // TODO: Check if it's the right way to do it
+    // See cy_boot page 53
     CyGlobalIntEnable;
 }
 
 void hal_sleep( void )
 {
-    // __WFI();
     // Sleep until interrupt occurs, Preferably system components
     // can be put in low-power mode before sleep, and be re-initialized
     // after sleep.
+    // __WFI();
 }
 
 u4_t hal_ticks( void )
@@ -229,7 +223,7 @@ u1_t hal_checkTimer(u4_t targettime)
     }
 #endif
     u2_t dt;
-// clear any pending interrupts
+    // clear any pending interrupts
 
     if( dt )
     {

@@ -28,55 +28,28 @@
 #include "project.h"
 
 #include "debug.h"
-
 #include "lmic.h"
 
 #define LED_OFF 0
 #define LED_ON  1
-
-#if 0
-#define LED_PORT        GPIOA // use GPIO PA8 (LED4 on IMST, P11/PPS/EXT1_10/GPS6 on Blipper)
-#define LED_PIN         8
-#define USART_TX_PORT   GPIOA
-#define USART_TX_PIN    9
-#define GPIO_AF_USART1  0x07
-#endif
     
 void debug_init () {
 
     LED_Write( LED_ON );
     UART_Start();
 
-#if 0
-    // configure LED pin as output
-    hw_cfg_pin(LED_PORT, LED_PIN, GPIOCFG_MODE_OUT | GPIOCFG_OSPEED_40MHz | GPIOCFG_OTYPE_PUPD | GPIOCFG_PUPD_PUP);
-    debug_led(0);
-
-    // configure USART1 (115200/8N1, tx-only)
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
-    hw_cfg_pin(USART_TX_PORT, USART_TX_PIN, GPIOCFG_MODE_ALT|GPIOCFG_OSPEED_40MHz|GPIOCFG_OTYPE_PUPD|GPIOCFG_PUPD_PUP|GPIO_AF_USART1);
-    USART1->BRR = 277; // 115200
-    USART1->CR1 = USART_CR1_UE | USART_CR1_TE; // usart+transmitter enable
-#endif
     // print banner
     debug_str("\r\n============== DEBUG STARTED ==============\r\n");
 }
 
 void debug_led(int val)
 {
-    LED_Write( (uint8_t)val );
-#if 0
-    hw_set_pin(LED_PORT, LED_PIN, val);
-#endif
+    LED_Write( val );
 }
 
 void debug_char(char c)
 {
     UART_PutChar( c );
-#if 0
-    while( !(USART1->SR & USART_SR_TXE) );    
-    USART1->DR = c;
-#endif
 }
 
 void debug_hex(u1_t b)
@@ -91,10 +64,6 @@ void debug_buf(const u1_t* buf, int len)
         debug_hex(*buf++);
         debug_char(' ');
     }
-#if 0
-    debug_char('\r');
-    debug_char('\n');
-#endif
     UART_PutCRLF();
 }
 
@@ -130,10 +99,6 @@ void debug_val(const char* label, u4_t val)
 {
     debug_str(label);
     debug_uint(val);
-#if 0
-    debug_char('\r');
-    debug_char('\n');
-#endif
     UART_PutCRLF();
 }
 
@@ -141,10 +106,6 @@ void debug_valdec(const char* label, s4_t val)
 {
     debug_str(label);
     debug_int(val);
-#if 0
-    debug_char('\r');
-    debug_char('\n');
-#endif
     UART_PutCRLF();
 }
 
@@ -196,9 +157,6 @@ void debug_event(int ev)
     };
     
     debug_str((ev < sizeof(evnames)/sizeof(evnames[0])) ? evnames[ev] : "EV_UNKNOWN" );
-#if 0
-    debug_char('\r');
-    debug_char('\n');
-#endif
+
     UART_PutCRLF();
 }
