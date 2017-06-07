@@ -64,41 +64,40 @@ CY_ISR( Timer_Handler )
 void hal_init( void )
 {
     //hal_time_init();
-    
-    // GPIO configuration is done on the schematic
+    const u1_t RegVersion = 0x42;
     
     memset( &HAL, 0x00, sizeof( HAL ) );
     
     hal_disableIRQs();
     
     // Configure radio I/O and interrupt handler
+    // GPIO configuration is done on the schematic
     // isr_DIO_StartEx( DIO_Handler );
     
     // Configure radio SPI
     SPI_Start();
     
     // Configure timer and interrupt handler
-    Timer_Start();
-    isr_Timer_StartEx( Timer_Handler );
+    //Timer_Start();
+    //isr_Timer_StartEx( Timer_Handler );
     
     hal_enableIRQs();
     
     // Make sure that SPI communication with the radio module works
     // by reading the "version" register 0x42 of the radio module.
     hal_pin_nss(0);
-    u1_t val = hal_spi(0x42 & 0x7F);
+    u1_t val = hal_spi( RegVersion );
     hal_pin_nss(1);
     
-    if( 0 == val )
-    {
-        debug_str("HAL: There is an issue with the SPI communication to the radio module.\r\n");
-        hal_failed();
-    }
-    else if( 0x12 == val)
+    if( 0x12 == val )
     {
         debug_str("HAL: Detected the SX1272 radio module.\r\n");
+        //hal_failed();
     }
-    
+    else
+    {
+        debug_str("HAL: There is an issue with the SPI communication to the radio module.\r\n");
+    }
 }
 
 // set radio NSS pin to given value
@@ -130,7 +129,7 @@ void hal_pin_rst(u1_t val)
 // perform SPI transaction with radio
 u1_t hal_spi(u1_t outval) {
     SPI_WriteTxData( outval );
-    while( 0 == ( SPI_ReadRxStatus() & SPI_STS_SPI_DONE ) );
+    while( 0 == ( SPI_ReadTxStatus() & SPI_STS_SPI_IDLE ) );
     return SPI_ReadRxData();
 }
 
@@ -173,10 +172,9 @@ u4_t hal_ticks( void )
     }
 #endif
     hal_disableIRQs();
-
     u4_t t = HAL.ticks;
-    
     hal_enableIRQs();
+    
     return 0;
 }
 
