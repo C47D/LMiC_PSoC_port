@@ -33,9 +33,9 @@
 #define LED_OFF 0
 #define LED_ON  1
     
-void debug_init () {
-
-    LED_Write( LED_ON );
+void debug_init(void)
+{
+    LED_Write(LED_ON);
     UART_Start();
 
     // print banner
@@ -44,12 +44,12 @@ void debug_init () {
 
 void debug_led(int val)
 {
-    LED_Write( val );
+    LED_Write(val);
 }
 
 void debug_char(char c)
 {
-    UART_PutChar( c );
+    UART_PutChar(c);
 }
 
 void debug_hex(u1_t b)
@@ -69,7 +69,7 @@ void debug_buf(const u1_t* buf, int len)
 
 void debug_uint(u4_t v)
 {
-    UART_PutHexInt( v );
+    UART_PutHexInt(v);
 #if 0
     for(s1_t n=24; n>=0; n-=8) {
         debug_hex(v>>n);
@@ -81,13 +81,14 @@ void debug_int(s4_t v)
 {
     char buf[10], *p = buf;
     int n = debug_fmt(buf, sizeof(buf), v, 10, 0, 0);
-    while(n--)
+    while(n--) {
         debug_char(*p++);
+    }
 }
 
 void debug_str(const char* str)
 {
-    UART_PutString( str );
+    UART_PutString(str);
 #if 0    
     while(*str) {
         debug_char(*str++);
@@ -136,7 +137,7 @@ int debug_fmt(char* buf, int max, s4_t val, int base, int width, char pad)
 
 void debug_event(int ev)
 {
-    static const char* evnames[] = {
+    const char* evnames[] = {
         [EV_SCAN_TIMEOUT]   = "SCAN_TIMEOUT",
         [EV_BEACON_FOUND]   = "BEACON_FOUND",
         [EV_BEACON_MISSED]  = "BEACON_MISSED",
@@ -156,7 +157,7 @@ void debug_event(int ev)
         [EV_TXSTART]        = "EV_TXSTART",
     };
     
-    debug_str((ev < sizeof(evnames)/sizeof(evnames[0])) ? evnames[ev] : "EV_UNKNOWN" );
+    debug_str((ev < sizeof(evnames)/sizeof(evnames[0])) ? evnames[ev] : "EV_UNKNOWN");
 
     UART_PutCRLF();
 }

@@ -27,6 +27,11 @@
 
 #include "lmic.h"
 
+#if defined(DEBUG_HAL)
+    #include "project.h"
+    #include "debug.h"
+#endif
+
 // Changes by C47D
 // change from #elif CFG_sx1272_radio to #elif defined(CFG_sx1272_radio)
 // cause: #error was triggered when configured with CFG_sx1272_radio 
@@ -280,7 +285,7 @@ static u1_t randbuf[16];
 #endif
 
 
-static void writeReg (u1_t addr, u1_t data ) {
+static void writeReg (u1_t addr, u1_t data) {
     hal_pin_nss(0);
     hal_spi(addr | 0x80);
     hal_spi(data);
@@ -288,10 +293,13 @@ static void writeReg (u1_t addr, u1_t data ) {
 }
 
 static u1_t readReg (u1_t addr) {
+    u1_t val = 0;
+    
     hal_pin_nss(0);
     hal_spi(addr & 0x7F);
-    u1_t val = hal_spi(0x00);
+    val = hal_spi(0x00);
     hal_pin_nss(1);
+    
     return val;
 }
 
@@ -558,6 +566,9 @@ static void rxlora (u1_t rxmode) {
     // select LoRa modem (from sleep mode)
     opmodeLora();
     ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
+    #if defined(DEBUG_HAL)
+        debug_str("rxlora.\r\n");
+    #endif
     // enter standby mode (warm up))
     opmode(OPMODE_STANDBY);
     // don't use MAC settings at startup
@@ -685,15 +696,26 @@ void radio_init () {
 
     opmode(OPMODE_SLEEP);
 
+    #if defined(DEBUG_HAL)
+        debug_str("OSLMIC: Sanity check.\r\n");
+        LED_Write(0);
+    #endif
+    
     // some sanity checks, e.g., read version number
     u1_t v = readReg(RegVersion);
 #ifdef CFG_sx1276_radio
-    ASSERT( v == 0x12 ); 
+    ASSERT(v == 0x12);
 #elif defined(CFG_sx1272_radio)
     ASSERT( v == 0x22 );
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
+    #if defined(DEBUG_HAL)
+        debug_str("OSLMIC: Sanity check passed!.\r\n");
+        LED_Write(1);
+        debug_str("OSLMIC: Seed randomness via noise rssi.\r\n");
+    #endif
+    
     // seed 15-byte randomness via noise rssi
     rxlora(RXMODE_RSSI);
     while( (readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX ); // continuous rx

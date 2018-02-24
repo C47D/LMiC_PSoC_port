@@ -28,16 +28,27 @@
 #include "lmic.h"
 #include "oslmic.h"
 
+#if defined(DEBUG_HAL)
+#include "debug.h"
+#endif
+    
 // RUNTIME STATE
 static struct {
     osjob_t* scheduledjobs;
     osjob_t* runnablejobs;
 } OS;
 
-void os_init () {
+void os_init(void)
+{
     memset(&OS, 0x00, sizeof(OS));
+    
     hal_init();
     radio_init();
+    
+    #if defined(DEBUG_HAL)
+        debug_str("OSLMIC: LMIC Init.\r\n");
+    #endif
+    
     LMIC_init();
 }
 
