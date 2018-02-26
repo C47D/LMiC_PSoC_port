@@ -1,0 +1,3 @@
+--------------- Rebuild Started: 02/24/2018 22:53:12 Project: main.c, Configuration: ARM GCC 5.4-2016-q2-update Debug ---------------
+arm-none-eabi-gcc.exe -mcpu=cortex-m3 -mthumb -I..\lmic -I..\lmic_psoc_port -I. -IGenerated_Source\PSoC5 -Wa,-alh=.\CortexM3\ARM_GCC_541\Debug/main.lst -g -D DEBUG -D CFG_sx1276_radio -D CFG_eu868 -D CFG_DEBUG -D CFG_DEBUG_LMIC -D DEBUG_HAL -Wall -ffunction-sections -ffat-lto-objects -Og -std=gnu99 -c main.c -o .\CortexM3\ARM_GCC_541\Debug\main.o
+--------------- Rebuild Succeeded: 02/24/2018 22:53:21 ---------------

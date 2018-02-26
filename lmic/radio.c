@@ -410,7 +410,7 @@ static void configLoraModem () {
         // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi=00)
         writeReg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x04);
 
-#if CFG_TxContinuousMode
+#if defined (CFG_TxContinuousMode)
         // Only for testing
         // set ModemConfig2 (sf, TxContinuousMode=1, AgcAutoOn=1 SymbTimeoutHi=00)
         writeReg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x06);
@@ -786,7 +786,7 @@ static const u2_t LORA_RXDONE_FIXUP[] = {
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void radio_irq_handler (u1_t dio) {
-#if CFG_TxContinuousMode
+#if defined (CFG_TxContinuousMode)
     // clear radio IRQ flags
     writeReg(LORARegIrqFlags, 0xFF);
     u1_t p = readReg(LORARegFifoAddrPtr);

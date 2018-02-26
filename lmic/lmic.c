@@ -694,7 +694,7 @@ static void setBcnRxParams (void) {
 #define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 static void initJoinLoop (void) {
-#if CFG_TxContinuousMode
+#if defined (CFG_TxContinuousMode)
   LMIC.txChnl = 0;
 #else
     LMIC.txChnl = os_getRndU1() % NUM_DEFAULT_CHANNELS;
